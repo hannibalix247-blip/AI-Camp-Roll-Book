@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🤖 AI 온(ON) 미래 캠프 셀프 출석부</title>
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=Orbitron:wght@600;800;900&family=Outfit:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- CSS Styles -->
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header -->
+    <header class="app-header no-print">
+      <div class="header-main">
+        <div class="logo-title">
+          <div class="ai-icon-wrap">
+            <i class="fa-solid fa-robot ai-logo"></i>
+          </div>
+          <div>
+            <div class="camp-tag">2026 미래교육 프로젝트</div>
+            <h1>AI 온(ON) 미래 캠프 출석부</h1>
+          </div>
+        </div>
+        <div class="header-info">
+          <div class="info-badge">
+            <i class="fa-regular fa-calendar-days"></i>
+            <span>6학년(7/27~31) &bull; 5학년(8/3~7) &bull; 4학년(8/10~14)</span>
+          </div>
+          <div class="info-badge highlight">
+            <i class="fa-regular fa-clock"></i>
+            <span>활동시간: <strong>09:00 ~ 11:50</strong></span>
+          </div>
+          <div class="info-badge ai-badge">
+            <i class="fa-solid fa-users"></i>
+            <span>대상: <strong id="header-student-count">45</strong>명</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Navigation Tabs -->
+      <nav class="nav-tabs">
+        <button class="nav-btn active" data-tab="tab-self-checkin">
+          <i class="fa-solid fa-hand-pointer"></i>
+          <span>학생 셀프 출석체크</span>
+        </button>
+        <button class="nav-btn" data-tab="tab-attendance">
+          <i class="fa-solid fa-clipboard-user"></i>
+          <span>학년별 5일간 출석부</span>
+        </button>
+        <button class="nav-btn" data-tab="tab-stats">
+          <i class="fa-solid fa-chart-pie"></i>
+          <span>통계 &amp; 엑셀 다운로드</span>
+        </button>
+        <button class="nav-btn" data-tab="tab-roster">
+          <i class="fa-solid fa-user-gear"></i>
+          <span>명단 관리</span>
+        </button>
+      </nav>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="content-area">
+
+      <!-- ================= TAB 1: 학생 셀프 출석체크 ================= -->
+      <section id="tab-self-checkin" class="tab-content active no-print">
+        <div class="glass-panel">
+          <div class="kiosk-top-bar">
+            <div class="kiosk-title">
+              <h2><i class="fa-solid fa-microchip"></i> 본인 이름을 터치(클릭)하여 출석하세요!</h2>
+              <p class="subtitle">🤖 활동시간: 09:00 ~ 11:50 (09:10 이전: 🟢 출석 / 09:10 이후: 🟡 지각)</p>
+            </div>
+            
+            <div class="date-selector-box">
+              <label for="checkin-date-select"><i class="fa-regular fa-calendar-check"></i> 출석 날짜:</label>
+              <select id="checkin-date-select" class="form-select select-lg">
+                <!-- Dynamically populated by JS based on grade selection -->
+              </select>
+            </div>
+          </div>
+
+          <!-- Time Simulation & Rules Bar -->
+          <div class="time-rule-banner">
+            <div class="time-rule-items">
+              <span class="time-rule-tag tag-present">🟢 09:10 이전 ➔ [정상 출석]</span>
+              <span class="time-rule-tag tag-late">🟡 09:10 이후 ➔ [지각 처리]</span>
+              <span class="time-rule-tag tag-absent">🔴 11:50 종료 ➔ [미체크시 결석]</span>
+            </div>
+            <div class="sim-time-box">
+              <label for="sim-time-input"><i class="fa-solid fa-flask"></i> 시뮬레이션 테스트 시간:</label>
+              <input type="time" id="sim-time-input" class="form-input time-input" value="09:05">
+              <button id="btn-use-real-time" class="btn btn-outline btn-sm">현재 실시간 사용</button>
+            </div>
+          </div>
+
+          <!-- Grade Filter Tabs & Search -->
+          <div class="filter-kiosk-bar">
+            <div class="grade-pills">
+              <button class="grade-pill active" data-grade="ALL">전체 (45명)</button>
+              <button class="grade-pill" data-grade="6">6학년 (7/27~31)</button>
+              <button class="grade-pill" data-grade="5">5학년 (8/3~7)</button>
+              <button class="grade-pill" data-grade="4">4학년 (8/10~14)</button>
+            </div>
+            <div class="search-kiosk-box">
+              <i class="fa-solid fa-magnifying-glass"></i>
+              <input type="text" id="kiosk-search-input" class="form-input" placeholder="이름 또는 학급 검색 (예: 이서준, 4가람)">
+            </div>
+            <div class="sound-toggle">
+              <label><input type="checkbox" id="sound-chk" checked> 🔊 AI 알림음</label>
+            </div>
+          </div>
+
+          <!-- Touch Cards Grid -->
+          <div class="student-touch-grid" id="student-touch-grid">
+            <!-- Dynamic student cards generated by JS -->
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= TAB 2: 학년별 5일간 출석부 ================= -->
+      <section id="tab-attendance" class="tab-content no-print">
+        <div class="glass-panel">
+          <div class="table-toolbar">
+            <div class="toolbar-left">
+              <h2><i class="fa-solid fa-calendar-days"></i> 학년별 5일간 통합 출석부</h2>
+              <span class="subtitle">6학년(7/27~31), 5학년(8/3~7), 4학년(8/10~14) 학년별 캠프 일정 출석표입니다.</span>
+            </div>
+            <div class="toolbar-right">
+              <button id="btn-mark-all-present" class="btn btn-outline">
+                <i class="fa-solid fa-check-double"></i> 선택 날짜 전체 출석 처리
+              </button>
+            </div>
+          </div>
+
+          <!-- Filters -->
+          <div class="filter-bar">
+            <div class="filter-group">
+              <label>🎓 학년별 출석부 보기:</label>
+              <select id="attendance-grade-filter" class="form-select select-lg">
+                <option value="6">6학년 출석부 (7월 27일 ~ 7월 31일)</option>
+                <option value="5">5학년 출석부 (8월 3일 ~ 8월 7일)</option>
+                <option value="4">4학년 출석부 (8월 10일 ~ 8월 14일)</option>
+                <option value="ALL">전체 45명 보기 (통합)</option>
+              </select>
+            </div>
+            <div class="filter-group">
+              <label>🔍 검색:</label>
+              <input type="text" id="attendance-search-input" class="form-input" placeholder="학생 이름 또는 학급 검색...">
+            </div>
+          </div>
+
+          <!-- Legend -->
+          <div class="status-legend">
+            <span class="legend-item"><span class="badge status-present">출석</span> 출석 완료</span>
+            <span class="legend-item"><span class="badge status-late">지각</span> 지각 체결</span>
+            <span class="legend-item"><span class="badge status-absent">결석</span> 결석 처리</span>
+            <span class="legend-item"><span class="badge status-excused">공결</span> 공식 사유 결석</span>
+            <span class="legend-item"><span class="badge status-none">미체크</span> 출석 전</span>
+          </div>
+
+          <!-- Attendance Main Grid Table -->
+          <div class="table-responsive">
+            <table class="attendance-table" id="attendance-table">
+              <thead id="attendance-thead">
+                <!-- Dynamically updated columns based on grade schedule -->
+              </thead>
+              <tbody id="attendance-tbody">
+                <!-- Generated dynamically by JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= TAB 3: 통계 & 엑셀 다운로드 ================= -->
+      <section id="tab-stats" class="tab-content no-print">
+        <div class="stats-dashboard">
+          <!-- Summary Cards -->
+          <div class="stats-grid">
+            <div class="stat-card glass-panel">
+              <div class="stat-icon purple"><i class="fa-solid fa-robot"></i></div>
+              <div class="stat-info">
+                <span class="stat-label">전체 등록 학생</span>
+                <span class="stat-value" id="stat-total-students">45명</span>
+              </div>
+            </div>
+            <div class="stat-card glass-panel">
+              <div class="stat-icon green"><i class="fa-solid fa-user-check"></i></div>
+              <div class="stat-info">
+                <span class="stat-label">선택 날짜 출석 학생</span>
+                <span class="stat-value" id="stat-today-present">0명</span>
+              </div>
+            </div>
+            <div class="stat-card glass-panel">
+              <div class="stat-icon red"><i class="fa-solid fa-user-xmark"></i></div>
+              <div class="stat-info">
+                <span class="stat-label">선택 날짜 미출석 학생</span>
+                <span class="stat-value" id="stat-today-absent">45명</span>
+              </div>
+            </div>
+            <div class="stat-card glass-panel">
+              <div class="stat-icon cyan"><i class="fa-solid fa-chart-line"></i></div>
+              <div class="stat-info">
+                <span class="stat-label">캠프 평균 출석률</span>
+                <span class="stat-value" id="stat-avg-rate">0%</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Grade Breakdown & Export Actions -->
+          <div class="stats-detail-layout">
+            <div class="glass-panel grade-stats-card">
+              <h3><i class="fa-solid fa-chart-simple"></i> 학년별 출석 현황</h3>
+              <div class="grade-bar-list" id="grade-bar-list">
+                <!-- Dynamically generated bars -->
+              </div>
+            </div>
+
+            <div class="glass-panel export-actions-card">
+              <h3><i class="fa-solid fa-file-export"></i> 데이터 저장 &amp; 엑셀 내보내기</h3>
+              <p class="text-sub">출석부 데이터를 학교 보관용 엑셀(CSV)로 내보내거나 백업할 수 있습니다.</p>
+              
+              <div class="export-btn-group">
+                <button id="btn-export-excel" class="btn btn-success btn-lg btn-block">
+                  <i class="fa-solid fa-file-excel"></i> 전체 출석부 엑셀(CSV) 다운로드
+                </button>
+                <button id="btn-export-json" class="btn btn-outline btn-block">
+                  <i class="fa-solid fa-download"></i> 데이터 백업 파일(JSON) 저장
+                </button>
+                <div class="file-import-wrap">
+                  <label for="import-json-file" class="btn btn-outline btn-block">
+                    <i class="fa-solid fa-upload"></i> 백업 파일(JSON) 불러오기
+                  </label>
+                  <input type="file" id="import-json-file" accept=".json" class="hidden">
+                </div>
+                <button id="btn-reset-data" class="btn btn-danger-outline btn-block">
+                  <i class="fa-solid fa-rotate-left"></i> 출석 기록 초기화
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= TAB 4: 명단 관리 ================= -->
+      <section id="tab-roster" class="tab-content no-print">
+        <div class="glass-panel">
+          <div class="table-toolbar">
+            <div class="toolbar-left">
+              <h2><i class="fa-solid fa-user-gear"></i> AI 온 미래 캠프 명단 관리 (총 45명)</h2>
+              <span class="subtitle">학생 정보 수정, 추가, 삭제를 하거나 기본 45명 명단으로 복원할 수 있습니다.</span>
+            </div>
+            <div class="toolbar-right">
+              <button id="btn-open-add-student" class="btn btn-primary">
+                <i class="fa-solid fa-user-plus"></i> 새 학생 추가
+              </button>
+              <button id="btn-reset-roster" class="btn btn-outline">
+                <i class="fa-solid fa-arrows-rotate"></i> 기본 45명 명단으로 초기화
+              </button>
+            </div>
+          </div>
+
+          <div class="table-responsive">
+            <table class="attendance-table">
+              <thead>
+                <tr>
+                  <th>연번</th>
+                  <th>학급</th>
+                  <th>번호</th>
+                  <th>성명</th>
+                  <th style="width: 130px;">관리</th>
+                </tr>
+              </thead>
+              <tbody id="roster-tbody">
+                <!-- Dynamic roster rows -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="app-footer no-print">
+      <p>🤖 2026 AI 온(ON) 미래 캠프 셀프 출석체크 시스템 &bull; 미래교육 클럽 전용</p>
+    </footer>
+  </div>
+
+  <!-- Modal: Check-In Toast / Success Popup -->
+  <div class="modal-backdrop hidden" id="checkin-modal">
+    <div class="modal-card glass-panel text-center">
+      <div class="success-icon-wrap">
+        <i class="fa-solid fa-circle-check"></i>
+      </div>
+      <h2 id="modal-checkin-title">학생 출석 완료</h2>
+      <p id="modal-checkin-sub" class="text-lead">출석체크가 완료되었습니다!</p>
+      <div class="modal-class-badge" id="modal-class-no">4가람 13번</div>
+      <div class="modal-footer justify-center">
+        <button class="btn btn-primary btn-lg" id="btn-confirm-checkin">확인 (신나게 AI 캠프 시작! 🤖)</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Student Form (Add/Edit) -->
+  <div class="modal-backdrop hidden" id="student-modal">
+    <div class="modal-card glass-panel">
+      <div class="modal-header">
+        <h3 id="modal-title"><i class="fa-solid fa-user-plus"></i> 학생 정보 입력</h3>
+        <button class="btn-close" id="btn-close-modal"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <form id="student-form">
+        <input type="hidden" id="student-id-field">
+        <div class="form-group">
+          <label for="input-name">성명</label>
+          <input type="text" id="input-name" class="form-input" required placeholder="예: 이서준">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="input-grade">학년</label>
+            <select id="input-grade" class="form-select" required>
+              <option value="6">6학년 (7/27~31)</option>
+              <option value="5">5학년 (8/3~7)</option>
+              <option value="4">4학년 (8/10~14)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="input-class">학급/반 (예: 4가람, 5나리, 6아람)</label>
+            <input type="text" id="input-class" class="form-input" required placeholder="예: 4가람">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="input-number">번호</label>
+            <input type="number" id="input-number" class="form-input" min="1" max="99" required placeholder="예: 13">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" id="btn-cancel-modal">취소</button>
+          <button type="submit" class="btn btn-primary">저장하기</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- JavaScript Code -->
+  <script src="app.js"></script>
+</body>
+</html>
