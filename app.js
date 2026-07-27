@@ -428,19 +428,52 @@ function initKioskControls() {
     });
   });
 
+  const ADMIN_PASS = '0000';
+
+  function verifyAdminAuth() {
+    const inputPass = prompt("🔒 관리자 권한이 필요합니다.\n비밀번호 4자리를 입력하세요:", "");
+    if (inputPass === ADMIN_PASS) {
+      return true;
+    } else {
+      if (inputPass !== null) {
+        alert("❌ 관리자 비밀번호가 올바르지 않습니다.");
+      }
+      return false;
+    }
+  }
+
+  simTimeInput?.addEventListener('click', (e) => {
+    if (isUsingRealTime) {
+      e.preventDefault();
+      e.target.blur();
+      if (verifyAdminAuth()) {
+        isUsingRealTime = false;
+        btnRealTime.className = 'btn btn-outline btn-sm';
+        alert("⚠️ 시뮬레이션 테스트 시간 사용 모드로 전환되었습니다.");
+      }
+    }
+  });
+
   simTimeInput?.addEventListener('change', () => {
-    isUsingRealTime = false;
-    btnRealTime.className = 'btn btn-outline btn-sm';
+    if (!isUsingRealTime) {
+      btnRealTime.className = 'btn btn-outline btn-sm';
+    }
   });
 
   btnRealTime?.addEventListener('click', () => {
-    isUsingRealTime = true;
-    const now = new Date();
-    const h = String(now.getHours()).padStart(2, '0');
-    const m = String(now.getMinutes()).padStart(2, '0');
-    simTimeInput.value = `${h}:${m}`;
-    btnRealTime.className = 'btn btn-primary btn-sm';
-    alert(`현재 실제 시각(${h}:${m})으로 설정되었습니다.`);
+    if (!isUsingRealTime) {
+      if (verifyAdminAuth()) {
+        isUsingRealTime = true;
+        const now = new Date();
+        const h = String(now.getHours()).padStart(2, '0');
+        const m = String(now.getMinutes()).padStart(2, '0');
+        simTimeInput.value = `${h}:${m}`;
+        btnRealTime.className = 'btn btn-primary btn-sm';
+        alert(`🟢 현재 실제 시각(${h}:${m}) 사용 모드로 복귀되었습니다.`);
+      }
+    } else {
+      alert("🟢 이미 현재 실제 시각 사용 모드가 활성화되어 있습니다.");
+    }
   });
 
   document.getElementById('btn-confirm-checkin')?.addEventListener('click', () => {
