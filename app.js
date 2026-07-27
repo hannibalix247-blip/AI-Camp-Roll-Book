@@ -138,13 +138,23 @@ function loadDataFromStorage() {
   const savedRoster = localStorage.getItem('ai_camp_roster_v2');
   if (savedRoster) {
     try {
-      roster = JSON.parse(savedRoster);
+      const parsed = JSON.parse(savedRoster);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        roster = parsed;
+      } else {
+        roster = [...DEFAULT_ROSTER];
+      }
     } catch (e) {
       roster = [...DEFAULT_ROSTER];
     }
   } else {
     roster = [...DEFAULT_ROSTER];
     saveRosterToStorage();
+  }
+
+  // Double check roster validity
+  if (!Array.isArray(roster) || roster.length === 0) {
+    roster = [...DEFAULT_ROSTER];
   }
 
   const savedAttendance = localStorage.getItem('ai_camp_attendance_v2');
