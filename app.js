@@ -122,16 +122,31 @@ function playFuturisticAiSound(isLate = false) {
 
 // Initialization
 document.addEventListener('DOMContentLoaded', () => {
-  loadDataFromStorage();
-  initNavigation();
-  initKioskControls();
-  populateKioskDateDropdown();
-  renderStudentTouchGrid();
-  renderAttendanceTable();
-  updateStats();
-  renderRosterTable();
-  initModalAndForms();
+  try { loadDataFromStorage(); } catch (e) { roster = [...DEFAULT_ROSTER]; }
+  try { initNavigation(); } catch (e) {}
+  try { initKioskControls(); } catch (e) {}
+  try { populateKioskDateDropdown(); } catch (e) {}
+  try { renderStudentTouchGrid(); } catch (e) {}
+  try { renderAttendanceTable(); } catch (e) {}
+  try { updateStats(); } catch (e) {}
+  try { renderRosterTable(); } catch (e) {}
+  try { initModalAndForms(); } catch (e) {}
+  try { initRealtimeSyncEngine(); } catch (e) {}
 });
+
+function setSyncBadgeStatus(isOnline, text) {
+  const badge = document.getElementById('sync-status-badge');
+  const badgeText = document.getElementById('sync-status-text');
+  if (!badge || !badgeText) return;
+
+  if (isOnline) {
+    badge.className = 'info-badge sync-badge sync-active';
+    badgeText.textContent = text || '실시간 동기화 🟢';
+  } else {
+    badge.className = 'info-badge sync-badge sync-offline';
+    badgeText.textContent = text || '로컬 전용 🟡';
+  }
+}
 
 // Storage Management
 function loadDataFromStorage() {
@@ -172,13 +187,112 @@ function loadDataFromStorage() {
   document.getElementById('header-student-count').textContent = roster.length;
 }
 
+// Firebase Realtime Cloud Database Sync Engine (User Firebase Account)
+const FIREBASE_DB_URL = 'https://ai-realtime-roll-default-rtdb.firebaseio.com/attendance.json';
+
+let isUpdatingFromCloud = false;
+let lastLocalMutationTime = 0;
+let cloudSyncInterval = null;
+
 function saveRosterToStorage() {
   localStorage.setItem('ai_camp_roster_v2', JSON.stringify(roster));
-  document.getElementById('header-student-count').textContent = roster.length;
+  const studentCountElem = document.getElementById('header-student-count');
+  if (studentCountElem) studentCountElem.textContent = roster.length;
+  syncToFirebaseCloud();
 }
 
 function saveAttendanceToStorage() {
   localStorage.setItem('ai_camp_attendance_v2', JSON.stringify(attendanceData));
+  syncToFirebaseCloud();
+}
+
+async function syncToFirebaseCloud() {
+  if (isUpdatingFromCloud) return;
+  lastLocalMutationTime = Date.now();
+
+  try {
+    const payload = {
+      roster: roster,
+      attendanceData: attendanceData,
+      lastUpdated: new Date().toISOString()
+    };
+
+    await fetch(FIREBASE_DB_URL, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    setSyncBadgeStatus(true, '실시간 동기화 🟢');
+  } catch (err) {
+    console.warn('Firebase sync error:', err);
+    setSyncBadgeStatus(false, '동기화 연결 중 🟡');
+  }
+}
+
+async function fetchFromFirebaseCloud() {
+  if (Date.now() - lastLocalMutationTime < 3000) return;
+
+  try {
+    const res = await fetch(FIREBASE_DB_URL);
+    if (!res.ok) return;
+    const cloudContent = await res.json();
+
+    if (cloudContent && typeof cloudContent === 'object') {
+      applyFirebaseData(cloudContent);
+    } else {
+      syncToFirebaseCloud();
+    }
+    setSyncBadgeStatus(true, '실시간 동기화 🟢');
+  } catch (err) {
+    console.warn('Firebase fetch error:', err);
+  }
+}
+
+function applyFirebaseData(cloudContent) {
+  if (!cloudContent) return;
+  if (Date.now() - lastLocalMutationTime < 3000) return;
+
+  isUpdatingFromCloud = true;
+  let changed = false;
+
+  if (cloudContent.roster && Array.isArray(cloudContent.roster) && cloudContent.roster.length > 0) {
+    if (JSON.stringify(roster) !== JSON.stringify(cloudContent.roster)) {
+      roster = cloudContent.roster;
+      localStorage.setItem('ai_camp_roster_v2', JSON.stringify(roster));
+      const studentCountElem = document.getElementById('header-student-count');
+      if (studentCountElem) studentCountElem.textContent = roster.length;
+      changed = true;
+    }
+  }
+
+  if (cloudContent.attendanceData && typeof cloudContent.attendanceData === 'object') {
+    if (JSON.stringify(attendanceData) !== JSON.stringify(cloudContent.attendanceData)) {
+      attendanceData = cloudContent.attendanceData;
+      localStorage.setItem('ai_camp_attendance_v2', JSON.stringify(attendanceData));
+      changed = true;
+    }
+  }
+
+  if (changed) {
+    refreshCurrentActiveView();
+  }
+
+  isUpdatingFromCloud = false;
+}
+
+function refreshCurrentActiveView() {
+  renderStudentTouchGrid();
+  renderAttendanceTable();
+  updateStats();
+  renderRosterTable();
+}
+
+function initRealtimeSyncEngine() {
+  setSyncBadgeStatus(true, '실시간 동기화 🟢');
+  fetchFromFirebaseCloud();
+
+  if (cloudSyncInterval) clearInterval(cloudSyncInterval);
+  cloudSyncInterval = setInterval(fetchFromFirebaseCloud, 2000);
 }
 
 // Navigation Tabs
