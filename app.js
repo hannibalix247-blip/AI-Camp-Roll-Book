@@ -193,6 +193,7 @@ const FIREBASE_DB_URL = 'https://ai-realtime-roll-default-rtdb.firebaseio.com/at
 let isUpdatingFromCloud = false;
 let lastLocalMutationTime = 0;
 let cloudSyncInterval = null;
+let eventSource = null;
 
 function saveRosterToStorage() {
   localStorage.setItem('ai_camp_roster_v2', JSON.stringify(roster));
@@ -229,11 +230,15 @@ async function syncToFirebaseCloud() {
   }
 }
 
+// Mobile-optimized fetch with cache-busting timestamp
 async function fetchFromFirebaseCloud() {
-  if (Date.now() - lastLocalMutationTime < 3000) return;
+  if (Date.now() - lastLocalMutationTime < 2000) return;
 
   try {
-    const res = await fetch(FIREBASE_DB_URL);
+    const cacheBustUrl = `${FIREBASE_DB_URL}?t=${Date.now()}`;
+    const res = await fetch(cacheBustUrl, {
+      headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
+    });
     if (!res.ok) return;
     const cloudContent = await res.json();
 
@@ -250,7 +255,7 @@ async function fetchFromFirebaseCloud() {
 
 function applyFirebaseData(cloudContent) {
   if (!cloudContent) return;
-  if (Date.now() - lastLocalMutationTime < 3000) return;
+  if (Date.now() - lastLocalMutationTime < 2000) return;
 
   isUpdatingFromCloud = true;
   let changed = false;
@@ -287,12 +292,39 @@ function refreshCurrentActiveView() {
   renderRosterTable();
 }
 
+// Native Firebase Realtime SSE Stream for Mobile Instant Push
+function initFirebaseSSEStream() {
+  if (typeof EventSource === 'undefined') return;
+  try {
+    if (eventSource) eventSource.close();
+    eventSource = new EventSource(FIREBASE_DB_URL);
+    
+    eventSource.addEventListener('put', (e) => {
+      try {
+        const parsed = JSON.parse(e.data);
+        if (parsed && parsed.data) {
+          applyFirebaseData(parsed.data);
+        } else if (parsed && typeof parsed === 'object') {
+          applyFirebaseData(parsed);
+        }
+      } catch (err) {}
+    });
+
+    eventSource.addEventListener('patch', (e) => {
+      fetchFromFirebaseCloud();
+    });
+
+    eventSource.onerror = () => {};
+  } catch (e) {}
+}
+
 function initRealtimeSyncEngine() {
   setSyncBadgeStatus(true, '실시간 동기화 🟢');
   fetchFromFirebaseCloud();
+  initFirebaseSSEStream();
 
   if (cloudSyncInterval) clearInterval(cloudSyncInterval);
-  cloudSyncInterval = setInterval(fetchFromFirebaseCloud, 2000);
+  cloudSyncInterval = setInterval(fetchFromFirebaseCloud, 1500);
 }
 
 // Navigation Tabs
