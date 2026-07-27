@@ -407,6 +407,16 @@ function initKioskControls() {
   const simTimeInput = document.getElementById('sim-time-input');
   const btnRealTime = document.getElementById('btn-use-real-time');
 
+  // Force default to Realtime Usage on page load / refresh
+  isUsingRealTime = true;
+  if (btnRealTime) btnRealTime.className = 'btn btn-primary btn-sm';
+  if (simTimeInput) {
+    const now = new Date();
+    const h = String(now.getHours()).padStart(2, '0');
+    const m = String(now.getMinutes()).padStart(2, '0');
+    simTimeInput.value = `${h}:${m}`;
+  }
+
   dateSelect?.addEventListener('change', () => {
     renderStudentTouchGrid();
     renderAttendanceTable();
